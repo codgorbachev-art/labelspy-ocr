@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="description" content="LabelSpy: анализ состава без лишнего шума. OCR, E-коды, аллергены, светофор нутриентов">
+  <meta name="theme-color" content="#070a12">
+  <title>LabelSpy – Анализ состава упаковки</title>
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Crect fill='%230a84ff' width='256' height='256'/%3E%3Ctext x='50%' y='50%' text-anchor='middle' dy='.3em' font-size='140' font-weight='bold' fill='white' font-family='system-ui'%3ELS%3C/text%3E%3C/svg%3E" type="image/svg+xml">
+  <style>
+    :root {
+      --bg0: #070a12;
+      --bg1: #0b1020;
+      --text: rgba(255,255,255,0.92);
+      --muted: rgba(255,255,255,0.66);
+      --muted2: rgba(255,255,255,0.48);
+      --glass: rgba(255,255,255,0.08);
+      --glass2: rgba(255,255,255,0.06);
+      --stroke: rgba(255,255,255,0.14);
+      --stroke2: rgba(255,255,255,0.10);
+      --shadow: 0 18px 50px rgba(0,0,0,0.35);
+      --shadow2: 0 10px 30px rgba(0,0,0,0.24);
+      --accent: #0A84FF;
+      --accent2: #30D158;
+      --warn: #FF9F0A;
+      --danger: #FF453A;
+      --radius: 18px;
+      --radius2: 22px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, "SF Pro Display", "SF Pro Text", Segoe UI, Roboto, Arial, sans-serif;
+      --focus: 0 0 0 4px rgba(10,132,255,0.25);
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      color: var(--text);
+      background: radial-gradient(1200px 900px at 15% -10%, rgba(10,132,255,0.30), transparent 60%),
+                  radial-gradient(900px 800px at 95% 25%, rgba(48,209,88,0.22), transparent 60%),
+                  radial-gradient(1000px 700px at 45% 115%, rgba(255,159,10,0.16), transparent 60%),
+                  linear-gradient(180deg, var(--bg0), var(--bg1));
+      overflow-x: hidden;
+    }
+    .wrap { width: min(1120px, calc(100% - 32px)); margin: 0 auto; padding: 16px 0; }
+    .topbar { position: sticky; top: 0; z-index: 20; backdrop-filter: blur(16px) saturate(140%); -webkit-backdrop-filter: blur(16px) saturate(140%); background: rgba(10,14,28,0.55); border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .topbar__row { display: flex; align-items: center; justify-content: space-between; padding: 14px 0; gap: 12px; }
+    .brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+    .brand__mark { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 14px; background: linear-gradient(180deg, rgba(255,255,255,0.14), rgba(255,255,255,0.06)); border: 1px solid rgba(255,255,255,0.14); box-shadow: var(--shadow2); font-weight: 700; font-size: 16px; color: var(--accent); }
+    .brand__title { font-weight: 680; letter-spacing: -0.3px; }
+    .brand__sub { color: var(--muted); font-size: 12px; margin-top: 2px; }
+    .glass { border-radius: var(--radius2); background: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.06)); border: 1px solid rgba(255,255,255,0.12); box-shadow: var(--shadow); backdrop-filter: blur(18px) saturate(150%); -webkit-backdrop-filter: blur(18px) saturate(150%); }
+    .card { padding: 16px; }
+    .card__title { font-size: 18px; font-weight: 720; letter-spacing: -0.25px; margin: 0; }
+    .card__subtitle { margin-top: 6px; font-size: 13px; color: var(--muted); }
+    .hero { margin-top: 16px; padding: 18px 18px; display: flex; align-items: stretch; justify-content: space-between; gap: 16px; }
+    .hero__title { margin: 0; font-size: 26px; letter-spacing: -0.6px; }
+    .hero__lead { margin: 10px 0 0; color: var(--muted); line-height: 1.5; font-size: 14px; }
+    .hero__chips { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 8px; }
+    .chip { display: inline-flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 999px; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.10); color: rgba(255,255,255,0.85); font-size: 12px; }
+    .btn { position: relative; height: 40px; border-radius: 14px; padding: 0 14px; border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.90); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: transform .12s ease, background .18s ease, border-color .18s ease, box-shadow .18s ease; user-select: none; font-family: inherit; }
+    .btn:hover { transform: translateY(-1px); background: rgba(255,255,255,0.10); border-color: rgba(255,255,255,0.16); }
+    .btn:active { transform: translateY(0px) scale(0.99); }
+    .btn--primary { border-color: rgba(10,132,255,0.35); background: linear-gradient(180deg, rgba(10,132,255,0.32), rgba(10,132,255,0.16)); box-shadow: 0 10px 25px rgba(10,132,255,0.16); }
+    .btn--primary:hover { background: linear-gradient(180deg, rgba(10,132,255,0.40), rgba(10,132,255,0.18)); }
+    .field { display: flex; flex-direction: column; gap: 6px; width: 170px; }
+    .field__label { font-size: 12px; color: var(--muted); }
+    .field__control { height: 40px; border-radius: 14px; padding: 0 12px; color: var(--text); background: rgba(10,12,20,0.45); border: 1px solid rgba(255,255,255,0.12); outline: none; box-shadow: inset 0 1px 0 rgba(255,255,255,0.06); font-family: inherit; }
+    .field__control:focus { box-shadow: var(--focus), inset 0 1px 0 rgba(255,255,255,0.06); border-color: rgba(10,132,255,0.45); }
+    .textarea { width: 100%; min-height: 240px; resize: vertical; border-radius: 18px; padding: 12px 12px; color: var(--text); background: rgba(10,12,20,0.40); border: 1px solid rgba(255,255,255,0.12); outline: none; line-height: 1.45; font-family: inherit; }
+    .textarea:focus { box-shadow: var(--focus); border-color: rgba(10,132,255,0.45); }
+    .drop { position: relative; border-radius: 18px; background: rgba(255,255,255,0.05); border: 1px dashed rgba(255,255,255,0.20); overflow: hidden; }
+    .drop__input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+    .drop__content { padding: 16px; display: flex; align-items: center; justify-content: flex-start; gap: 12px; }
+    .drop__title { font-weight: 680; }
+    .drop__hint { margin-top: 2px; color: var(--muted); font-size: 12px; }
+    .drop.is-dragover { border-color: rgba(10,132,255,0.55); background: rgba(10,132,255,0.10); }
+    .preview { margin-top: 12px; position: relative; border-radius: 18px; overflow: hidden; background: rgba(0,0,0,0.20); border: 1px solid rgba(255,255,255,0.10); min-height: 220px; display: grid; place-items: center; }
+    .preview img { max-width: 100%; max-height: 360px; display: none; transform: translateZ(0); border-radius: 18px; }
+    .preview__placeholder { padding: 24px; color: var(--muted); text-align: center; }
+    .preview.has-image img { display: block; }
+    .preview.has-image .preview__placeholder { display: none; }
+    .progress { margin-top: 12px; }
+    .progress__bar { height: 10px; border-radius: 999px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.10); overflow: hidden; }
+    .progress__fill { height: 100%; width: 0%; border-radius: 999px; background: linear-gradient(90deg, rgba(10,132,255,0.70), rgba(48,209,88,0.65)); transition: width .16s ease; }
+    .verdict { padding: 14px; border-radius: 18px; border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.06); }
+    .verdict__title { font-weight: 760; font-size: 16px; }
+    .verdict__body { margin-top: 6px; color: var(--muted); line-height: 1.45; font-size: 13px; }
+    .verdict--ok { border-color: rgba(48,209,88,0.30); background: rgba(48,209,88,0.10); }
+    .verdict--warn { border-color: rgba(255,159,10,0.35); background: rgba(255,159,10,0.10); }
+    .verdict--danger { border-color: rgba(255,69,58,0.35); background: rgba(255,69,58,0.10); }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px auto 0; }
+    @media (max-width: 980px) { .grid { grid-template-columns: 1fr; } }
+    .toasts { position: fixed; right: 16px; bottom: 16px; z-index: 40; display: grid; gap: 10px; width: min(420px, calc(100% - 32px)); }
+    .toast { padding: 12px; border-radius: 18px; border: 1px solid rgba(255,255,255,0.12); background: rgba(15,18,30,0.82); backdrop-filter: blur(16px) saturate(140%); box-shadow: var(--shadow2); display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; animation: toastIn .20s ease-out; }
+    @keyframes toastIn { from { transform: translateY(8px); opacity: 0; } to { transform: translateY(0px); opacity: 1; } }
+    .toast__title { font-weight: 720; }
+    .badge { display: inline-flex; align-items: center; padding: 6px 10px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.10); background: rgba(255,255,255,0.06); font-size: 12px; }
+    .badge--ok { border-color: rgba(48,209,88,0.28); background: rgba(48,209,88,0.10); }
+    .badge--warn { border-color: rgba(255,159,10,0.30); background: rgba(255,159,10,0.10); }
+    .badge--danger { border-color: rgba(255,69,58,0.30); background: rgba(255,69,58,0.10); }
+  </style>
+</head>
+<body>
+  <header class="topbar glass">
+    <div class="wrap">
+      <div class="topbar__row">
+        <div class="brand">
+          <div class="brand__mark">LS</div>
+          <div>
+            <div class="brand__title">LabelSpy</div>
+            <div class="brand__sub">Анализ состава без шума</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="hero glass card">
+      <div class="hero__left">
+        <h1 class="hero__title">Анализ упаковки в две строки</h1>
+        <p class="hero__lead">Загрузите фото этикетки или вставьте текст — найдём состав, E‑коды, аллергены и светофор нутриентов.</p>
+        <div class="hero__chips">
+          <span class="chip">✓ OCR (Яндекс Vision)</span>
+          <span class="chip">✓ E-коды</span>
+          <span class="chip">✓ Аллергены</span>
+          <span class="chip">✓ Светофор</span>
+        </div>
+      </div>
+    </section>
+
+    <div class="grid">
+      <section class="glass card">
+        <div class="card__head">
+          <h2 class="card__title">📸 Фото упаковки</h2>
+          <div class="card__subtitle">Лучше работает на кадре с одним блоком «Состав» и хорошей резкостью</div>
+        </div>
+
+        <div class="drop" id="drop">
+          <input type="file" class="drop__input" id="fileInput" accept="image/*" />
+          <div class="drop__content">
+            <div>
+              <div class="drop__title">Перетащите фото сюда</div>
+              <div class="drop__hint">или нажмите, чтобы выбрать файл</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="preview" id="preview">
+          <img id="previewImg" src="" alt="preview" />
+          <div class="preview__placeholder">Предпросмотр появится здесь</div>
+        </div>
+
+        <div style="margin-top: 14px;">
+          <label class="field__label">OCR</label>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <span id="ocrStatus">OCR: ожидание</span>
+            <div class="progress" style="flex: 1;">
+              <div class="progress__bar">
+                <div class="progress__fill" id="ocrProgress" style="width: 0%;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="glass card">
+        <div class="card__head">
+          <h2 class="card__title">✏️ Текст</h2>
+          <div class="card__subtitle">Состав вручную или результат OCR</div>
+        </div>
+        <textarea class="textarea" id="textInput" placeholder="Вставьте или отредактируйте состав..."></textarea>
+        <button class="btn btn--primary" style="margin-top: 10px; width: 100%;" id="analyzeBtn">Анализировать</button>
+      </section>
+    </div>
+
+    <section class="glass card" id="resultsCard" style="display: none; margin-top: 16px;">
+      <div class="card__head">
+        <h2 class="card__title">📊 Результаты</h2>
+      </div>
+      <div id="results"></div>
+    </section>
+  </main>
+
+  <div class="toasts" id="toasts"></div>
+
+  <script>
+    const API_BASE = '/api/ocr';
+    
+    const drop = document.getElementById('drop');
+    const fileInput = document.getElementById('fileInput');
+    const preview = document.getElementById('preview');
+    const previewImg = document.getElementById('previewImg');
+    const textInput = document.getElementById('textInput');
+    const analyzeBtn = document.getElementById('analyzeBtn');
+    const ocrStatus = document.getElementById('ocrStatus');
+    const ocrProgress = document.getElementById('ocrProgress');
+    const resultsCard = document.getElementById('resultsCard');
+    const results = document.getElementById('results');
+    const toasts = document.getElementById('toasts');
+
+    // Drag & drop
+    drop.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      drop.classList.add('is-dragover');
+    });
+    drop.addEventListener('dragleave', () => drop.classList.remove('is-dragover'));
+    drop.addEventListener('drop', (e) => {
+      e.preventDefault();
+      drop.classList.remove('is-dragover');
+      const files = e.dataTransfer.files;
+      if (files.length > 0) handleFile(files[0]);
+    });
+
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files.length > 0) handleFile(e.target.files[0]);
+    });
+
+    function handleFile(file) {
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const base64 = e.target.result.split(',')[1];
+        preview.classList.add('has-image');
+        previewImg.src = e.target.result;
+
+        ocrStatus.textContent = 'OCR: обработка...';
+        ocrProgress.style.width = '20%';
+
+        try {
+          const resp = await fetch(API_BASE, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              image: base64,
+              mimeType: 'JPEG',
+              languageCodes: ['ru', 'en'],
+              model: 'page'
+            })
+          });
+
+          ocrProgress.style.width = '80%';
+
+          if (!resp.ok) {
+            throw new Error(`API error: ${resp.status}`);
+          }
+
+          const data = await resp.json();
+          textInput.value = data.text || '';
+          ocrStatus.textContent = '✓ OCR готов';
+          ocrProgress.style.width = '100%';
+          showToast('OCR готов!', 'success');
+        } catch (err) {
+          ocrStatus.textContent = '✗ Ошибка OCR';
+          ocrProgress.style.width = '0%';
+          showToast('Ошибка OCR: ' + err.message, 'error');
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+
+    analyzeBtn.addEventListener('click', () => {
+      const text = textInput.value.trim();
+      if (!text) {
+        showToast('Вставьте текст состава', 'warn');
+        return;
+      }
+
+      const analysis = analyzeComposition(text);
+      displayResults(analysis);
+    });
+
+    function analyzeComposition(text) {
+      const upper = text.toUpperCase();
+      
+      // E-codes
+      const ePattern = /E\d{3,4}/gi;
+      const ecodes = text.match(ePattern) || [];
+      
+      // Allergens
+      const allergens = [
+        { name: 'Молоко', pattern: /молок/i },
+        { name: 'Глютен', pattern: /глютен|пшеничн|ячмен|рож/i },
+        { name: 'Орехи', pattern: /орех|фундук|миндал|грецк/i },
+        { name: 'Арахис', pattern: /арахис/i },
+        { name: 'Рыба', pattern: /рыб/i },
+        { name: 'Морепродукты', pattern: /морепродукт|креветк|устриц|мидий/i },
+        { name: 'Яйца', pattern: /яйц|яйцо/i },
+        { name: 'Соя', pattern: /соя/i },
+        { name: 'Кунжут', pattern: /кунжут|сезам/i },
+      ];
+      
+      const found = allergens.filter(a => a.pattern.test(text)).map(a => a.name);
+      
+      // Verdict
+      let verdict = 'Анализ результатов';
+      let verdictClass = '';
+      if (ecodes.length > 5) {
+        verdict = 'Много добавок (E-кодов)';
+        verdictClass = 'verdict--warn';
+      } else if (ecodes.length > 10) {
+        verdict = 'Очень много добавок';
+        verdictClass = 'verdict--danger';
+      } else if (found.length > 0) {
+        verdict = 'Обнаружены потенциальные аллергены';
+        verdictClass = 'verdict--warn';
+      } else {
+        verdict = 'Состав выглядит приемлемо';
+        verdictClass = 'verdict--ok';
+      }
+
+      return { ecodes, allergens: found, verdict, verdictClass };
+    }
+
+    function displayResults(analysis) {
+      let html = `<div class="verdict ${analysis.verdictClass}"><div class="verdict__title">${analysis.verdict}</div></div>`;
+      
+      if (analysis.ecodes.length > 0) {
+        html += `<div style="margin-top: 12px;"><strong>E-коды (${analysis.ecodes.length}):</strong><div style="margin-top: 8px; display: flex; flex-wrap: wrap; gap: 8px;">`;
+        for (const e of analysis.ecodes) {
+          html += `<span class="badge">${e}</span>`;
+        }
+        html += `</div></div>`;
+      }
+      
+      if (analysis.allergens.length > 0) {
+        html += `<div style="margin-top: 12px;"><strong>Аллергены (${analysis.allergens.length}):</strong><div style="margin-top: 8px; display: flex; flex-wrap: wrap; gap: 8px;">`;
+        for (const a of analysis.allergens) {
+          html += `<span class="badge badge--warn">${a}</span>`;
+        }
+        html += `</div></div>`;
+      }
+
+      results.innerHTML = html;
+      resultsCard.style.display = 'block';
+      resultsCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function showToast(msg, type = 'info') {
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.innerHTML = `<div class="toast__title">${msg}</div>`;
+      toasts.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 200);
+      }, 3000);
+    }
+  </script>
+</body>
+</html>
