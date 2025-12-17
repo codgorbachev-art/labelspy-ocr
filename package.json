@@ -2,15 +2,14 @@
   "name": "labelspy-ocr",
   "version": "1.0.0",
   "description": "LabelSpy: Food label analyzer with Yandex Cloud Vision OCR",
-  "main": "api/ocr.js",
-  "scripts": {
-    "start": "node -e \"const http = require('http'); const handler = require('./api/ocr'); const server = http.createServer((req, res) => { if (req.method === 'POST' && req.url.startsWith('/api/ocr')) { let body = ''; req.on('data', d => body += d); req.on('end', () => { req.body = JSON.parse(body); handler(req, res); }); } else { res.writeHead(200, {'Content-Type': 'application/json'}); res.end(JSON.stringify({status: 'ok'})); } }); server.listen(process.env.PORT || 3000); \"",
-    "dev": "node -e \"const http = require('http'); const fs = require('fs'); const path = require('path'); const handler = require('./api/ocr'); const server = http.createServer((req, res) => { if (req.method === 'POST' && req.url.startsWith('/api/ocr')) { let body = ''; req.on('data', d => body += d); req.on('end', () => { req.body = JSON.parse(body); handler(req, res); }); } else { const file = path.join('./public', req.url === '/' ? 'index.html' : req.url); try { res.setHeader('Content-Type', req.url.endsWith('.json') ? 'application/json' : 'text/html'); res.end(fs.readFileSync(file)); } catch { res.statusCode = 404; res.end('Not found'); } } }); server.listen(3000, () => console.log('Dev server on :3000')); \""
-  },
+  "private": true,
   "engines": {
     "node": "18.x"
   },
+  "scripts": {
+    "start": "node api/server.js"
+  },
   "keywords": ["ocr", "food", "label", "analyzer", "yandex", "vision"],
-  "author": "Родион",
+  "author": "Rodion",
   "license": "MIT"
 }
