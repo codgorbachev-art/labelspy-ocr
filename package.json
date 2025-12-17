@@ -4,7 +4,7 @@
   "description": "LabelSpy: Food label analyzer with Yandex Cloud Vision OCR",
   "private": true,
   "engines": {
-    "node": "18.x"
+    "node": "24.x"
   },
   "scripts": {
     "start": "node api/server.js"
