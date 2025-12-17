@@ -1,6 +1,5 @@
 {
   "buildCommand": "npm install",
   "outputDirectory": "public",
-  "installCommand": "npm install",
-  "devCommand": "node -e \"const http = require('http'); const fs = require('fs'); const path = require('path'); http.createServer((req, res) => { if (req.url.startsWith('/api/')) { const ocr = require('./api/ocr'); ocr(req, res); } else { const file = path.join('./public', req.url === '/' ? 'index.html' : req.url); try { res.setHeader('Content-Type', req.url.endsWith('.json') ? 'application/json' : 'text/html'); res.end(fs.readFileSync(file)); } catch { res.statusCode = 404; res.end('Not found'); } } }).listen(3000); console.log('Dev server running on port 3000'); \""
+  "installCommand": "npm install"
 }
