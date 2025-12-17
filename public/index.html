@@ -121,7 +121,7 @@
     <section class="hero glass card">
       <div class="hero__left">
         <h1 class="hero__title">Анализ упаковки в две строки</h1>
-        <p class="hero__lead">Загрузите фото этикетки или вставьте текст — найдём состав, E‑коды, аллергены и светофор нутриентов.</p>
+        <p class="hero__lead">Загрузите фото этикетки или вставьте текст — найдём состав, E-коды, аллергены и светофор нутриентов.</p>
         <div class="hero__chips">
           <span class="chip">✓ OCR (Яндекс Vision)</span>
           <span class="chip">✓ E-коды</span>
@@ -187,7 +187,7 @@
   <div class="toasts" id="toasts"></div>
 
   <script>
-    const API_BASE = '/api/ocr';
+    const API_BASE = '/api';
     
     const drop = document.getElementById('drop');
     const fileInput = document.getElementById('fileInput');
@@ -280,9 +280,9 @@
       
       // Allergens
       const allergens = [
-        { name: 'Молоко', pattern: /молок/i },
-        { name: 'Глютен', pattern: /глютен|пшеничн|ячмен|рож/i },
-        { name: 'Орехи', pattern: /орех|фундук|миндал|грецк/i },
+        { name: 'Молоко', pattern: /молоко/i },
+        { name: 'Глютен', pattern: /глютен|пшенич|ячмен|рож/i },
+        { name: 'Орехи', pattern: /орех|фундук|миндал|греч/i },
         { name: 'Арахис', pattern: /арахис/i },
         { name: 'Рыба', pattern: /рыб/i },
         { name: 'Морепродукты', pattern: /морепродукт|креветк|устриц|мидий/i },
