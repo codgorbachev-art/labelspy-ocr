@@ -223,7 +223,7 @@
       analyzeBtn.textContent = '⏳ Анализ...';
 
       try {
-        const resp = await fetch('/gemini', {
+        const resp = await fetch('/api/gemini', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ text, mode: 'analyze' })
@@ -310,7 +310,7 @@
         panel.innerHTML = '<div style="text-align: center; color: var(--muted);">⏳ Загружаю рецепты...</div>';
         
         try {
-          const resp = await fetch('/gemini', {
+          const resp = await fetch('/api/gemini', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ text, mode: 'recipes' })
